@@ -1,0 +1,78 @@
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: default-service
+  namespace: default
+spec:
+  hosts:
+  - example.com
+  gateways:
+  - gateway
+  http:
+  - fault:
+      delay:
+        fixedDelay: 5s
+        percentage:
+          value: 10
+      abort:
+        httpStatus: 500
+        percentage:
+          value: 10
+    match:
+    - uri:
+        exact: /
+    - uri:
+        prefix: /callback
+    - uri:
+        prefix: /static
+    - uri:
+        regex: '^.*\.(ico|png|jpg|svg)$'
+    route:
+    - destination:
+        subset: v1
+        host: default-service
+        port:
+          number: 80
+      weight: 90
+    - destination:
+        subset: v2
+        host: default-service
+        port:
+          number: 80
+      weight: 10
+    mirror:
+      host: default-service
+      subset: v2
+    mirrorPercentage:
+      value: 100
+    timeout: 5s
+    retries:
+      attempts: 2
+      perTryTimeout: 5s
+---
+# DestinationRule defines policies that apply to traffic intended for a service after routing has occurred.
+# These rules specify configuration for load balancing, connection pool size from the sidecar,
+# and outlier detection settings to detect and evict unhealthy hosts from the load balancing pool.
+# https://istio.io/latest/docs/reference/config/networking/destination-rule/
+apiVersion: networking.istio.io/v1alpha3
+kind: DestinationRule
+metadata:
+  name: default-service-destination-rule
+  namespace: default
+spec:
+  host: service
+  trafficPolicy:
+    loadBalancer:
+      simple: LEAST_CONN
+    connectionPool:
+      tcp:
+        maxConnections: 1
+      http:
+        http1MaxPendingRequests: 1
+        maxRequestsPerConnection: 1
+    outlierDetection:
+      consecutiveGatewayErrors: 1
+      interval: 1s
+      baseEjectionTime: 1m
+    tls:
+      mode: ISTIO_MUTUAL
