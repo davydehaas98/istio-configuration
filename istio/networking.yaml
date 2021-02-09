@@ -13,11 +13,11 @@ spec:
       delay:
         fixedDelay: 5s
         percentage:
-          value: 10
+          value: 5
       abort:
         httpStatus: 500
         percentage:
-          value: 10
+          value: 5
     match:
     - uri:
         exact: /
@@ -29,16 +29,16 @@ spec:
         regex: '^.*\.(ico|png|jpg|svg)$'
     route:
     - destination:
-        subset: v1
         host: default-service
         port:
           number: 80
+        subset: v1
       weight: 90
     - destination:
-        subset: v2
         host: default-service
         port:
           number: 80
+        subset: v2
       weight: 10
     mirror:
       host: default-service
@@ -66,13 +66,24 @@ spec:
       simple: LEAST_CONN
     connectionPool:
       tcp:
-        maxConnections: 1
+        maxConnections: 10
+        connectTimeout: 30ms
+        tcpKeepalive:
+          probes: 9
+          time: 3600s
+          interval: 75s
       http:
         http1MaxPendingRequests: 1
-        maxRequestsPerConnection: 1
+        http2MaxRequests: 10
+        maxRequestsPerConnection: 2
+        idleTimeout: 3600s
+        h2UpgradePolicy: UPGRADE # Upgrade http1.1 to http2
+        useClientProtocol: false
     outlierDetection:
-      consecutiveGatewayErrors: 1
+      baseEjectionTime: 2m
+      consecutiveGatewayErrors: 1 # 502, 503 or 504
       interval: 1s
-      baseEjectionTime: 1m
+      maxEjectionPercent: 100
+      minHealthPercent: 0
     tls:
       mode: ISTIO_MUTUAL
