@@ -6,7 +6,8 @@ metadata:
 spec:
   hosts:
   - www.google.com
-  - api.twitter.com
+  - www.google.be
+  - mail.google.com
   addresses:
   - 0.0.0.0/0
   ports:
