@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wireshark
+  labels:
+    app: wireshark
+spec:
+  containers:
+  - image: linuxserver/wireshark
+    imagePullPolicy: Always
+    name: wireshark
+    command:
+    - "sleep"
+    - "604800"
+  restartPolicy: Always
