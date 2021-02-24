@@ -1,7 +1,35 @@
+--- Install Istio 1.8.1 ---
 curl -L https://istio.io/downloadIstio | sh -
 cd istio-1.8.1
 export PATH=$PWD/bin:$PATH
 istioctl install --set profile=demo --set meshConfig.outboundTrafficPolicy.mode=REGISTRY_ONLY
 
+--- Namespace ---
 kubectl create namespace default
 kubectl label namespace default istio-injection=enabled
+
+kubectl create secret docker-registry azurecr-secret --docker-server=<servername>.azurecr.io --docker-username=<username> --docker-password=<password> --namespace=default
+
+kubectl apply -n default -f deployment.yml -f service.yml -f secret.yml
+
+--- Circuit Breaker ---
+https://istio.io/latest/docs/tasks/traffic-management/circuit-breaking/
+
+kubectl apply -f https://raw.githubusercontent.com/istio/istio/release-1.8/samples/httpbin/sample-client/fortio-deploy.yaml
+
+export FORTIO_POD=$(kubectl get pods -lapp=fortio -o 'jsonpath={.items[0].metadata.name}')
+kubectl exec "$FORTIO_POD" -c fortio -- /usr/bin/fortio curl -quiet http://backoffice-frontend-service
+kubectl exec "$FORTIO_POD" -c fortio -- /usr/bin/fortio load -c 2 -qps 0 -n 20 -loglevel Warning http://backoffice-frontend-service
+kubectl exec "$FORTIO_POD" -c istio-proxy -- pilot-agent request GET stats | grep backoffice-frontend-service | grep pending
+
+--- TLS ---
+export SECURE_INGRESS_PORT=$(kubectl -n istio-system get service istio-ingressgateway -o jsonpath='{.spec.ports[?(@.name=="https")].nodePort}')
+export INGRESS_HOST=$(kubectl get po -l istio=ingressgateway -n istio-system -o jsonpath='{.items[0].status.hostIP}')
+curl -v -HHost:kiali.istio-example.nl --resolve "kiali.istio-example.nl:$SECURE_INGRESS_PORT:$INGRESS_HOST" --cacert certificate-istio-example.crt "https://kiali.istio-example.nl:$SECURE_INGRESS_PORT"
+
+--- Service Entry / Egress ---
+curl https://www.google.com
+curl https://www.google.be
+curl https://www.google.nl
+curl https://mail.google.com
+curl https://drive.google.com
