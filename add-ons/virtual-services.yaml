@@ -1,19 +1,20 @@
+---
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
-  name: kiali-virtual-service
-  namespace: istio-system
+  name: kubernetes-dashboard-virtual-service
+  namespace: kube-system
 spec:
   hosts:
-  - kiali.istio-example.nl
+  - dashboard.istio-example.nl
   gateways:
   - gateway
   http:
   - route:
     - destination:
-        host: kiali
+        host: kubernetes-dashboard
         port: 
-          number: 20001
+          number: 8443
     timeout: 5s
 ---
 apiVersion: networking.istio.io/v1alpha3
@@ -37,6 +38,42 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
+  name: kiali-virtual-service
+  namespace: istio-system
+spec:
+  hosts:
+  - kiali.istio-example.nl
+  gateways:
+  - gateway
+  http:
+  - route:
+    - destination:
+        host: kiali
+        port: 
+          number: 20001
+    timeout: 5s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: jaeger-virtual-service
+  namespace: istio-system
+spec:
+  hosts:
+  - jaeger.istio-example.nl
+  gateways:
+  - gateway
+  http:
+  - route:
+    - destination:
+        host: jaeger-collector
+        port: 
+          number: 14268
+    timeout: 5s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
   name: prometheus-virtual-service
   namespace: istio-system
 spec:
@@ -55,6 +92,24 @@ spec:
 apiVersion: networking.istio.io/v1alpha3
 kind: VirtualService
 metadata:
+  name: tracing-virtual-service
+  namespace: default
+spec:
+  hosts:
+  - tracing.istio-example.nl
+  gateways:
+  - gateway
+  http:
+  - route:
+    - destination:
+        host: tracing
+        port: 
+          number: 80
+    timeout: 5s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
   name: zipkin-virtual-service
   namespace: istio-system
 spec:
@@ -68,4 +123,22 @@ spec:
         host: zipkin
         port: 
           number: 9411
+    timeout: 5s
+---
+apiVersion: networking.istio.io/v1alpha3
+kind: VirtualService
+metadata:
+  name: wireshark-virtual-service
+  namespace: default
+spec:
+  hosts:
+  - wireshark.istio-example.nl
+  gateways:
+  - gateway
+  http:
+  - route:
+    - destination:
+        host: wireshark
+        port: 
+          number: 3000
     timeout: 5s
